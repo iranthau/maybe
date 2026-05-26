@@ -15,7 +15,7 @@ class Family::AutoCategorizerTest < ActiveSupport::TestCase
     txn2 = create_transaction(account: @account, name: "Amazon purchase").transaction
     txn3 = create_transaction(account: @account, name: "Netflix subscription").transaction
 
-    test_category = @family.categories.create!(name: "Test category")
+    test_category = @family.categories.create!(name: "Loan Payments", classification: "expense")
 
     provider_response = provider_success_response([
       AutoCategorization.new(transaction_id: txn1.id, category_name: test_category.name),

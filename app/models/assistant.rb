@@ -17,6 +17,9 @@ class Assistant
   end
 
   def respond_to(message)
+    llm = get_model_provider(message.ai_model)
+    raise "No LLM provider configured for model: #{message.ai_model}. Check OPENAI_ACCESS_TOKEN and that the model is supported." if llm.nil?
+
     assistant_message = AssistantMessage.new(
       chat: chat,
       content: "",
@@ -27,7 +30,7 @@ class Assistant
       message: message,
       instructions: instructions,
       function_tool_caller: function_tool_caller,
-      llm: get_model_provider(message.ai_model)
+      llm: llm
     )
 
     latest_response_id = chat.latest_assistant_response_id

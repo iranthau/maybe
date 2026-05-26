@@ -1,6 +1,9 @@
 class Family::AutoCategorizer
   Error = Class.new(StandardError)
 
+  # Only send debt/asset-relevant categories to the LLM (no budget categories like Entertainment, Food & Drink, etc.)
+  DEBT_AND_ASSET_KEYWORDS = %w[loan payment fee interest debt].freeze
+
   def initialize(family, transaction_ids: [])
     @family = family
     @transaction_ids = transaction_ids
@@ -52,7 +55,7 @@ class Family::AutoCategorizer
     end
 
     def user_categories_input
-      family.categories.map do |category|
+      debt_and_asset_categories.map do |category|
         {
           id: category.id,
           name: category.name,
@@ -61,6 +64,27 @@ class Family::AutoCategorizer
           classification: category.classification
         }
       end
+    end
+
+    def debt_and_asset_categories
+      categories = family.categories.to_a
+      categories.select do |category|
+        debt_or_asset_category?(category, categories)
+      end
+    end
+
+    def debt_or_asset_category?(category, all_categories)
+      return true if category.classification == "income"
+      return true if category.classification == "expense" && debt_or_asset_expense?(category.name)
+      return false unless category.parent_id.present?
+
+      parent = all_categories.find { |c| c.id == category.parent_id }
+      parent.present? && debt_or_asset_category?(parent, all_categories)
+    end
+
+    def debt_or_asset_expense?(name)
+      downcased = name.downcase
+      DEBT_AND_ASSET_KEYWORDS.any? { |keyword| downcased.include?(keyword) }
     end
 
     def transactions_input
